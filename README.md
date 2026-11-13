@@ -19,15 +19,15 @@
 
 ## 1. What it is
 
-A group of five people plays Truco (an Argentine card game) every two weeks. For two years the results went into a Google Sheet and then a Looker Studio dashboard. The manual workflow had three problems: transcription errors from paper to spreadsheet, the limitation of spreadsheets as query engines for multi-year historical analysis, and the constraint of Looker Studio when the visualisation needs change.
+A group of five people plays Truco (an Argentine card game) every two weeks. For two years the results went into a Google Sheet and then a Looker Studio dashboard. The manual workflow had three problems: transcription errors from paper to spreadsheet, the limitation of spreadsheets as query engines for multi-year historical analysis, and the constraint of Looker Studio when the visualization needs change.
 
 The app replaces all three parts of that workflow.
 
 **Loading.** A form for manual entry of a game session (a list of individual hands: who played, which pair won, how much was wagered). An Excel upload path with a downloadable template and a preview before confirmation. An admin panel for corrections and verification.
 
-**Storage.** PostgreSQL with a normalised relational model and three SQL views that compute all analytics at query time.
+**Storage.** PostgreSQL with a normalized relational model and three SQL views that compute all analytics at query time.
 
-**Visualisation.** Six charts on a public dashboard with year and all-time filters. No login required.
+**Visualization.** Six charts on a public dashboard with year and all-time filters. No login required.
 
 ## 2. The analytics layer
 
@@ -35,7 +35,7 @@ The relational model stores two tables: one row per game session and one row per
 
 Three SQL views handle this.
 
-**`partidos_expandidos` (expanded hands)** uses a `LATERAL JOIN` to unnest the five player columns into one row per hand per player. This is essentially `UNNEST` with a key lookup, the standard SQL pattern for going from a column-per-entity structure to a long-format table without denormalisation. The view adds a computed `ganador` flag per player per hand based on who was on the winning pair.
+**`partidos_expandidos` (expanded hands)** uses a `LATERAL JOIN` to unnest the five player columns into one row per hand per player. This is essentially `UNNEST` with a key lookup, the standard SQL pattern for going from a column-per-entity structure to a long-format table without denormalization. The view adds a computed `ganador` flag per player per hand based on who was on the winning pair.
 
 ```sql
 -- Shape of the transformation (condensed, not the full view)
@@ -57,11 +57,11 @@ All six dashboard charts read from these three views. Adding a new chart is a ma
 
 ## 3. Design decisions
 
-**Pair normalisation on INSERT.** A pair `"ND"` and a pair `"DN"` are the same pair. Two options: normalise when writing to the database, or normalise in every query that groups by pair. Normalising on INSERT (`pair.split('').sort().join('')`) means every query can group by the stored value directly. No computed column, no function call in the GROUP BY, no risk of inconsistency between applications that read from the table.
+**Pair normalization on INSERT.** A pair `"ND"` and a pair `"DN"` are the same pair. Two options: normalize when writing to the database, or normalize in every query that groups by pair. Normalizing on INSERT (`pair.split('').sort().join('')`) means every query can group by the stored value directly. No computed column, no function call in the GROUP BY, no risk of inconsistency between applications that read from the table.
 
-**Regular view over materialised view.** With a maximum of around 1,500 hands accumulated over five years, the performance difference between a regular view and a materialised view on this data is measured in milliseconds, not seconds. A regular view is the right default. The migration path to a materialised view (if the dashboard ever exceeds 500ms) is documented in the codebase as an explicit future option, not a forgotten possibility.
+**Regular view over materialized view.** With a maximum of around 1,500 hands accumulated over five years, the performance difference between a regular view and a materialized view on this data is measured in milliseconds, not seconds. A regular view is the right default. The migration path to a materialized view (if the dashboard ever exceeds 500ms) is documented in the codebase as an explicit future option, not a forgotten possibility.
 
-**Railway over Supabase.** An intentional learning decision: a real Express backend gives full control over HTTP behaviour, middleware, and query execution, which Supabase's managed API abstracts away. For a personal project with no time pressure, the cost of building more is worth the control gained. The pattern (own REST API with Prisma as the ORM layer) is directly transferable to professional back-end work.
+**Railway over Supabase.** An intentional learning decision: a real Express backend gives full control over HTTP behavior, middleware, and query execution, which Supabase's managed API abstracts away. For a personal project with no time pressure, the cost of building more is worth the control gained. The pattern (own REST API with Prisma as the ORM layer) is directly transferable to professional back-end work.
 
 **Database-level constraints.** Business rules that can be expressed as invariants live in the database, not in the application layer.
 
@@ -104,7 +104,7 @@ The backend API, SQL views, and frontend were built with **Claude Code as a tech
 **What I designed:**
 
 - Problem framing and solution architecture (what tables, what views, what the dashboard should show and why)
-- The relational model, including the normalisation decision for pairs and the database constraints
+- The relational model, including the normalization decision for pairs and the database constraints
 - The SQL view design: the LATERAL JOIN pattern, the year-filter approach, the stats structure
 - Every chart choice: what question each chart answers, what the filter options are, what the axes mean
 - Infrastructure setup end-to-end (Railway, Vercel, Cloudflare, custom domain)
@@ -121,7 +121,7 @@ The design is where domain knowledge lives. Claude Code handles execution speed.
 ## 6. What this project demonstrates
 
 - **SQL analytics design.** The LATERAL JOIN pattern to go from column-per-entity to long format, year-filtered views as a query pattern, database constraints as a data quality layer. These are data engineering patterns applied to a personal project. The same patterns appear in professional analytics work at larger scale.
-- **Design tradeoff documentation.** The normalised view vs. materialised view decision, the Railway vs. Supabase choice, the pair normalisation strategy are all in the codebase with their reasoning. The documentation is part of the decision, not a follow-up task.
+- **Design tradeoff documentation.** The normalized view vs. materialized view decision, the Railway vs. Supabase choice, the pair normalization strategy are all in the codebase with their reasoning. The documentation is part of the decision, not a follow-up task.
 - **Full-stack delivery from first principles.** Custom REST API, ORM with migrations, public Next.js frontend, CDN and custom domain. End-to-end ownership without a managed platform absorbing the decisions.
 - **AI-native delivery.** Designing and validating a full-stack system as a solo practitioner, using Claude Code to execute at speed while maintaining design ownership, is a concrete capability in the current development environment.
 
